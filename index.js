@@ -1,33 +1,26 @@
 var test = require('tape');
 
-test('Order with unintentional side effects', function(t) {
-		var cartProto = {
-			items: [],
+function highPass(number, cutoff) {
+	cutoff = cutoff || this.cutoff;
+	return (number >= cutoff);
+}
 
-			addItem: function addItem(item) {
-				this.items.push(item);
-			}
-		},
+var filter1 = {
+	highPass: highPass,
+	cutoff: 5
+  },
+  filter2 = {
+    // No highpass here
+    cutoff: 3  
+  };
 
-		createCart = function (items) {
-			var cart = Object.create(cartProto);
-			cart.items = Object.create(items);
-			return cart;
-		},
+test('Invoking a method', function(t) {
+	var result1 = filter1.highPass(3),
+	result2 = highPass.call(filter2, 3),
+	result3 = filter1.highPass(6);
 
-		savedCart = createCart(["apple", "pear", "orange"]),
-
-		session = {
-			get: function get() {
-				return this.cart;
-			},
-			cart: createCart(savedCart.items)
-		};
-
-		session.cart.addItem('grapefruit');
-
-		t.ok(session.cart.items.indexOf('grapefruit') !== -1, 'Passes: Session cart has grapefruit.');
-
-		t.ok(savedCart.items.indexOf('grapefruit') === -1, 'Fails: the stored cart is unchanged.');
-		t.end();
+	t.equal(result1, false, '3 >= filter1.cutoff should be false.');
+	t.equal(result2, true, '3 >= filter2.cutoff should be true.');
+	t.equal(result3, true, '6 >= filter1.cutoff should be true.');
+	t.end();
 });
